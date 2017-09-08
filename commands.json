@@ -1,0 +1,32 @@
+{
+    "prefix" : "!",
+    "commands" :
+    [
+	{
+	    "id" : 1,
+	    "keywords" :
+	    [
+		"hi",
+		"hello"
+	    ]
+	},
+	{
+	    "id" : 2,
+	    "keywords" :
+	    [
+		"roll",
+		"dice"
+	    ]
+	},
+	{
+	    "id" : 99,
+	    "keywords" :
+	    [
+		"kill",
+		"murder",
+		"die",
+		"destroy"
+	    ]
+	}
+    ]
+}
