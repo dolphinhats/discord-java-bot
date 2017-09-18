@@ -3,6 +3,7 @@ import java.util.List;
 import java.util.Iterator;
 import java.util.HashMap;
 import java.util.ArrayList;
+
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
@@ -10,8 +11,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import json.JSONObject;
-import json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONArray;
 
 import sx.blah.discord.*;
 import sx.blah.discord.api.*;
@@ -32,9 +33,6 @@ public class Bot implements Runnable
 
     private static volatile IDiscordClient client;
     private static volatile Random rng;
-
-    private static volatile AudioPlayer audioPlayer;
-    private static volatile AudioManager audioManager;
     
     private static volatile String commandPrefix;
     private static volatile HashMap<String,Integer> commands;
@@ -324,6 +322,65 @@ public class Bot implements Runnable
 	}
     }
 
+    private class SoundQueue implements Runnable
+    {
+	private ArrayList<SoundPLayer> soundQueue;
+
+	public SoundQueue()
+	{
+	    //ehh
+	}
+
+	//gets the voice channel and parses the sound effect
+	public void enqueueSound(IMessage message)
+	{
+	    IUser user = message.getAuthor();
+	    IGuild guild = message.getGuild();
+	    IVoiceState voiceState = user.getVoiceStateForGuild(guild);
+	    IVoiceChannel voiceChannel = voiceState.getChannel();
+
+	    //todo: parse message for sound effect
+	    //add soundeffect
+	}
+
+	//dequeues sound effect and plays it, checking for any additional sounds afterwards
+	public void run()
+	{
+	    SoundPlayer soundPlayer = soundQueue.remove(0);
+	    Thread t = new Thread(soundPlayer);
+	    t.start();
+	}
+    }
+    
+    private class SoundPlayer implements Runnable
+    {
+	private IVoiceChannel voiceChannel;
+	private String soundPath;
+	
+	public SoundPlayer(IVoiceChannel vc, String sp)
+	{
+	    voiceChannel = vc;
+	    soundPath = sp;
+	}
+	public void run()
+	{
+	    try
+		{
+		    voiceChannel.join();
+		}
+	    catch (Exception ex)
+		{
+		    return;
+		}
+	    
+	    IGuild guild = voiceChannel.getGuild();
+	    AudioManager audioManager = (AudioManager)guild.getAudioManager();
+	    AudioPlayer audioPlayer = AudioPlayer.getAudioPlayerForAudioManager(audioManager);
+		
+	    audioPlayer.queue(new java.io.File(soundPath));
+	}
+    }
+    /*
     private class Radio implements Runnable
     {
 	public Radio()
@@ -390,6 +447,6 @@ public class Bot implements Runnable
 	    
 	}
     }
-
+    */
 }
 
