@@ -1,9 +1,10 @@
 import java.util.Random;
 import java.util.List;
 import java.util.Iterator;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.ArrayList;
-
+import java.util.regex.*;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
@@ -24,6 +25,7 @@ import sx.blah.discord.handle.impl.events.guild.channel.message.*;
 import sx.blah.discord.util.*;
 import sx.blah.discord.util.DiscordException;
 import sx.blah.discord.util.audio.*;
+import sx.blah.discord.util.audio.events.*;
 import sx.blah.discord.util.audio.providers.FileProvider;
 
 public class Bot implements Runnable
@@ -36,7 +38,11 @@ public class Bot implements Runnable
     
     private static volatile String commandPrefix;
     private static volatile HashMap<String,Integer> commands;
+
+    private static volatile SoundQueue soundQueue;
     
+    private static volatile java.io.File soundEffectsPath;
+
     public static void main(String[] args)
     {
 	if (args.length != 2)
@@ -74,6 +80,10 @@ public class Bot implements Runnable
 	apiKey = k;
 	rng = new Random(System.currentTimeMillis());
 	
+	soundQueue = new SoundQueue();
+	Thread sq = new Thread(soundQueue);
+	sq.start();
+	    
 	commands = new HashMap<String,Integer>();
 
 	try
@@ -84,9 +94,14 @@ public class Bot implements Runnable
 		    String s = obj.toString();
 		    data = data + System.getProperty("line.separator") + s;
 		}
-		
+
+		//parse commands.json
 		JSONObject obj = new JSONObject(data);
+
 		commandPrefix = obj.getString("prefix");
+		
+		soundEffectsPath = new java.io.File(obj.getString("sfxPath"));
+		
 		JSONArray commandsArray = obj.getJSONArray("commands");
 		for (int i=0;i<commandsArray.length();i++)
 		    {
@@ -95,8 +110,8 @@ public class Bot implements Runnable
 			JSONArray keywords = command.getJSONArray("keywords");
 			for (int j=0;j<keywords.length();j++)
 			    {
-				String s = (String)keywords.get(j);
-				commands.put(s,id);
+				String keyword = (String)keywords.get(j);
+				commands.put(keyword,id);
 			    }
 		    }
 	    }
@@ -236,6 +251,41 @@ public class Bot implements Runnable
 			}
 		    return out;
 		}
+	    else if (command == 3 || command == 4)
+		{
+		    //strip out the command
+		    String search = "^.*(" + content.trim().replaceFirst("^[^ ]* ","").replace(" ","|") + ").*$";
+		    ArrayList<String> matches = new ArrayList<String>();
+		    for (String s : soundEffectsPath.list())
+			{
+			    try
+				{
+				    if (s.matches(search))
+					{
+					    matches.add(s);
+					}
+				}
+			    catch (PatternSyntaxException e)
+				{
+				    return e.getMessage();
+				}
+			}
+		    if (command == 4)
+			{
+			    String out = "Sound effects matching regex '" + search.replace("*","\\*").replace("_","\\_") + "':\n";
+			    for (Object s : matches.toArray())
+				{
+				    out = out + (String)s + "\n";
+				}
+			    return out;
+			}
+		    if (command == 3)
+			{
+			    String song = matches.get(rng.nextInt(matches.size()));
+			    soundQueue.enqueueSound(message.getAuthor(),soundEffectsPath + "/" + song);
+			    return "Enqueuing '" + song + "'";
+			}
+		}
 	    else if (command == 99)
 		{
 		    System.exit(0);
@@ -324,60 +374,88 @@ public class Bot implements Runnable
 
     private class SoundQueue implements Runnable
     {
-	private ArrayList<SoundPLayer> soundQueue;
+	private volatile ArrayList<SoundPlayer> queue;
 
 	public SoundQueue()
 	{
-	    //ehh
+	    queue = new ArrayList<SoundPlayer>();
 	}
 
 	//gets the voice channel and parses the sound effect
-	public void enqueueSound(IMessage message)
+	public void enqueueSound(IUser user, String soundPath)
 	{
-	    IUser user = message.getAuthor();
-	    IGuild guild = message.getGuild();
-	    IVoiceState voiceState = user.getVoiceStateForGuild(guild);
-	    IVoiceChannel voiceChannel = voiceState.getChannel();
+	    IVoiceChannel voiceChannel = null;
+	    
+	    for (IVoiceState i : user.getVoiceStatesLong().values())
+		{
+		    if (i.getChannel() != null)
+			{
+			    voiceChannel = i.getChannel();
+			    break;
+			}
+		}
 
-	    //todo: parse message for sound effect
-	    //add soundeffect
+	    queue.add(new SoundPlayer(voiceChannel,soundPath));
 	}
 
 	//dequeues sound effect and plays it, checking for any additional sounds afterwards
 	public void run()
 	{
-	    SoundPlayer soundPlayer = soundQueue.remove(0);
-	    Thread t = new Thread(soundPlayer);
-	    t.start();
+	    while (true)
+		{
+		    if (queue.size() > 0)
+			{
+			    SoundPlayer soundPlayer = queue.remove(0);
+			    Thread t = new Thread(soundPlayer);
+			    t.start();
+			    try
+				{
+				    t.join();
+				    
+				}
+			    catch (Exception e)
+				{
+				}
+			}
+		    Thread.yield();
+		}
 	}
+
     }
     
     private class SoundPlayer implements Runnable
     {
+	private AudioPlayer audioPlayer;
 	private IVoiceChannel voiceChannel;
 	private String soundPath;
 	
 	public SoundPlayer(IVoiceChannel vc, String sp)
 	{
-	    voiceChannel = vc;
 	    soundPath = sp;
+	    voiceChannel = vc;
+
+	    IGuild guild = voiceChannel.getGuild();
+	    AudioManager audioManager = (AudioManager)guild.getAudioManager();
+	    audioPlayer = AudioPlayer.getAudioPlayerForAudioManager(audioManager);
 	}
+	
 	public void run()
 	{
 	    try
 		{
 		    voiceChannel.join();
+		    AudioPlayer.Track track = audioPlayer.queue(new java.io.File(soundPath));
+
+		    while (track.isReady() || track.getCurrentTrackTime() < track.getTotalTrackTime())
+			{
+			    Thread.yield();
+			}
 		}
 	    catch (Exception ex)
 		{
-		    return;
+		    System.out.println(ex.getMessage());
 		}
-	    
-	    IGuild guild = voiceChannel.getGuild();
-	    AudioManager audioManager = (AudioManager)guild.getAudioManager();
-	    AudioPlayer audioPlayer = AudioPlayer.getAudioPlayerForAudioManager(audioManager);
-		
-	    audioPlayer.queue(new java.io.File(soundPath));
+	    voiceChannel.leave();
 	}
     }
     /*

@@ -1,5 +1,6 @@
 {
     "prefix" : "!",
+    "sfxPath" : "sounds/",
     "commands" :
     [
 	{
@@ -16,6 +17,28 @@
 	    [
 		"roll",
 		"dice"
+	    ]
+	},
+	{
+	    "id" : 3,
+	    "keywords" :
+	    [
+		"sf",
+		"sfx",
+		"sound",
+		"soundeffect"
+	    ]
+	},
+	{
+	    "id" : 4,
+	    "keywords" :
+	    [
+		"sflist",
+		"listsf",
+		"sfxlist",
+		"listsfx",
+		"soundlist",
+		"soundeffectlist"
 	    ]
 	},
 	{

@@ -3,7 +3,7 @@
 DISCORD4J := $(wildcard Discord4j-*.jar)
 
 #will need to create file called api-key.txt which contains the api key
-APIKEY := $(shell cat api-key.txt) 
+APIKEY := $(shell cat api-key.txt)
 
 JSONDIR = json
 
