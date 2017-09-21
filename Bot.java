@@ -58,16 +58,10 @@ public class Bot implements Runnable
 	
 	while (!bot.isDone())
 	    {
-		try
-		    {
-			Thread.sleep(1000);
-		    }
-		catch (InterruptedException e)
-		    {
-		    }
+		Thread.yield();
 	    }
 
-	System.out.println("Good bye");
+	System.out.println("Goodbye"); //Hi Sele!
     }
 
     public boolean isDone()
@@ -286,9 +280,14 @@ public class Bot implements Runnable
 			    return "Enqueuing '" + song + "'";
 			}
 		}
+	    else if (command == 5) 
+		{
+		    return "";
+		}
 	    else if (command == 99)
 		{
-		    System.exit(0);
+		    done = true;
+		    return "Goodbye!";
 		}
 /*	    else if (command == 2) //queue a url
 		{
