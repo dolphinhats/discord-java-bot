@@ -18,10 +18,10 @@ Typing ```$ make run``` will compile the json package and Bot.java, then run the
 
    - [x] Roll dice
    - [x] Voice chat sound effects
-   - [] Cross-server posting
-   - [] Wiktionary search
-   - [] Redesign command methodology
+   - [ ] Cross-server posting
+   - [ ] Wiktionary search
+   - [ ] Redesign command methodology
       - Command interface classes?
       - Python plugins?
       - Events?
-   - [] Command !help function
+   - [ ] Command !help function
