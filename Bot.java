@@ -404,17 +404,26 @@ public class Bot implements Runnable
 		{
 		    if (queue.size() > 0)
 			{
+			    System.out.println("Queue size: " + queue.size());
 			    SoundPlayer soundPlayer = queue.remove(0);
 			    Thread t = new Thread(soundPlayer);
 			    t.start();
 			    try
 				{
+				    System.out.println("1 Queued sound, joining thread");
 				    t.join();
-				    
+				    System.out.println("2 Thread should have ended here");
 				}
 			    catch (Exception e)
 				{
 				}
+			}
+		    try
+			{
+			    Thread.sleep(500);
+			}
+		    catch (Exception x)
+			{
 			}
 		    Thread.yield();
 		}
@@ -442,18 +451,23 @@ public class Bot implements Runnable
 	{
 	    try
 		{
+		    System.out.println("1.1 Joining VC");
 		    voiceChannel.join();
+		    System.out.println("1.2 playing song");
 		    AudioPlayer.Track track = audioPlayer.queue(new java.io.File(soundPath));
 
-		    while (track.isReady() || track.getCurrentTrackTime() < track.getTotalTrackTime())
+		    Long currTime = track.getCurrentTrackTime();
+		    while (track.isReady())
 			{
+			    currTime = track.getCurrentTrackTime();
 			    Thread.yield();
 			}
 		}
 	    catch (Exception ex)
 		{
-		    System.out.println(ex.getMessage());
+		    System.out.println("Error while playing sound effect: " + ex.getMessage());
 		}
+	    System.out.println("1.3 Leaving VC");
 	    voiceChannel.leave();
 	}
     }
