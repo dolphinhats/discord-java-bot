@@ -50,18 +50,21 @@ public class Bot implements Runnable
 		System.out.println("Usage: " + System.getProperty("sun.java.command") + " <API key> <command json file>");
 		return;
 	    }
-	
-	Bot bot = new Bot(args[0],args[1]);
-	
-	Thread t = new Thread(bot);
-	t.start();
-	
-	while (!bot.isDone())
-	    {
-		Thread.yield();
-	    }
 
-	System.out.println("Goodbye"); //Hi Sele!
+	while (true) //super dirty method to restart the bot
+	    {
+		Bot bot = new Bot(args[0],args[1]);
+	
+		Thread t = new Thread(bot);
+		t.start();
+	
+		while (!bot.isDone())
+		    {
+			Thread.yield();
+		    }
+		
+		Thread.sleep("5000");
+	    }
     }
 
     public boolean isDone()
