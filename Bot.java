@@ -62,8 +62,8 @@ public class Bot implements Runnable
 		    {
 			Thread.yield();
 		    }
-		
-		Thread.sleep("5000");
+		bot = null; //garbage collect the bot
+		Thread.sleep(5000); //sleep 5 seconds to allow everything to die
 	    }
     }
 
